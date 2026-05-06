@@ -14,18 +14,20 @@ Copy `.env.example` to `.env` and fill in all three keys before running.
 | `DEEPL_API_KEY` | https://www.deepl.com/pro-api |
 | `ELEVENLABS_API_KEY` | https://elevenlabs.io/app/settings/api-keys |
 
-Translation backend toggle:
+Translation backend modes:
 
-- `OPENAI_TRANSLATION_ENABLED=true` by default
-- `DEEPL_TRANSLATION_ENABLED=false` by default
-- Set `OPENAI_TRANSLATION_ENABLED=false` and `DEEPL_TRANSLATION_ENABLED=true` to switch to DeepL
+- `TRANSLATOR_BACKEND=openai` -> GPT handles translation + localization in one call
+- `TRANSLATOR_BACKEND=deepl` -> DeepL-only translation
+- `TRANSLATOR_BACKEND=hybrid` -> DeepL translation + GPT localization polish
+- `TRANSLATOR_BACKEND=auto` -> uses `OPENAI_TRANSLATION_ENABLED` and `DEEPL_TRANSLATION_ENABLED`
 
 ```env
 OPENAI_API_KEY=sk-...
 DEEPL_API_KEY=...
 ELEVENLABS_API_KEY=...
+TRANSLATOR_BACKEND=hybrid
 OPENAI_TRANSLATION_ENABLED=true
-DEEPL_TRANSLATION_ENABLED=false
+DEEPL_TRANSLATION_ENABLED=true
 ```
 
 > **ElevenLabs plan note:** voice cloning via `/voices/add` requires a paid plan
@@ -76,12 +78,17 @@ curl -X POST http://localhost:8000/api/v1/translate/text \
   }'
 ```
 
-### 2. Voice translation (returns MP3)
+### 2. Voice translation (returns ephemeral audio URL)
 ```bash
 curl -X POST http://localhost:8000/api/v1/translate/voice \
   -F "audio=@/path/to/voice.mp3" \
-  -F 'localization={"target_language":"Spanish","target_locale":"Colombia","style":"conversational"}' \
-  --output translated_voice.mp3
+  -F 'localization={"target_language":"Spanish","target_locale":"Colombia","style":"conversational"}'
+```
+
+Then request the returned `audio_url` (valid for 5 minutes):
+
+```bash
+curl "http://localhost:8000/api/v1/translate/voice/play/<token>" --output translated_voice.mp3
 ```
 
 ### 3. Video translation (returns translated text)
@@ -112,3 +119,5 @@ curl http://localhost:8000/health
 | `/translate/voice` | 45 seconds |
 | `/translate/video` | 90 seconds |
 | `/translate/import` | 90 seconds |
+
+Ephemeral voice playback URL TTL: 5 minutes.

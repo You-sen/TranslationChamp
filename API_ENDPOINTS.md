@@ -98,7 +98,7 @@ curl -X POST http://localhost:8000/api/v1/translate/voice \
 ```
 
 **Response fields:**
-- `audio_url` (string): Ephemeral URL (valid for ~60s) to download/play the synthesized MP3
+- `audio_url` (string): Ephemeral URL (valid for 5 minutes) to download/play the synthesized MP3
 
 ### Response (GET /translate/voice/play/{token})
 
@@ -253,17 +253,30 @@ DEFAULT_SPEECH_RATE=1.1   # 110% of normal speed (faster)
 
 Valid range: 0.5–2.0
 
-### Translation Backend Toggle
+### Translation Backend Configuration
 
-Switch between OpenAI and DeepL:
+Choose translation mode using `TRANSLATOR_BACKEND`:
 
 ```env
-# Use OpenAI (default)
+TRANSLATOR_BACKEND=openai  # GPT only (translate + localize)
+TRANSLATOR_BACKEND=deepl   # DeepL only
+TRANSLATOR_BACKEND=hybrid  # DeepL translate -> GPT localization polish
+TRANSLATOR_BACKEND=auto    # Use feature flags below
+```
+
+If using `TRANSLATOR_BACKEND=auto`, control behavior with feature flags:
+
+```env
+# OpenAI only
 OPENAI_TRANSLATION_ENABLED=true
 DEEPL_TRANSLATION_ENABLED=false
 
-# Use DeepL
+# DeepL only
 OPENAI_TRANSLATION_ENABLED=false
+DEEPL_TRANSLATION_ENABLED=true
+
+# Hybrid (both enabled)
+OPENAI_TRANSLATION_ENABLED=true
 DEEPL_TRANSLATION_ENABLED=true
 ```
 
@@ -319,7 +332,7 @@ Both allow you to try endpoints interactively with live requests.
 - Text translation: No hard limit (depends on DeepL/OpenAI quota)
 - Voice translation: 45 seconds max per request
 - Video translation: 90 seconds max per request
-- Ephemeral audio URLs: Expire after ~60 seconds
+- Ephemeral audio URLs: Expire after 5 minutes
 - ElevenLabs voice cloning: Requires paid plan with Instant Voice Cloning quota
 
 ---
@@ -380,5 +393,5 @@ Get just the translated text, no audio synthesis.
 
 ---
 
-**Last Updated:** May 4, 2026  
+**Last Updated:** May 6, 2026  
 **API Version:** v1
