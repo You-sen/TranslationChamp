@@ -6,8 +6,8 @@ _CACHE: dict = {}
 _LOCK = asyncio.Lock()
 
 
-async def store_audio(token: str, data: bytes, media_type: str = "audio/mpeg", ttl: int = 60) -> None:
-    """Store audio bytes in-memory with a TTL (seconds)."""
+async def store_audio(token: str, data: bytes, media_type: str = "audio/mpeg", ttl: int = 300) -> None:
+    """Store audio bytes in-memory with a TTL (seconds). Default: 300s (5 minutes)."""
     expires_at = time.time() + ttl
     async with _LOCK:
         _CACHE[token] = {"bytes": data, "expires_at": expires_at, "media_type": media_type}

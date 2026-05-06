@@ -41,7 +41,7 @@ async def translate_voice_with_request(
 ):
     """Translate audio and return a short ephemeral URL to play the synthesized audio.
 
-    The audio is kept in memory for a short TTL (default 60s).
+    The audio is kept in memory for a short TTL (default 5 minutes).
     """
     loc = _parse_localization(localization)
     audio_bytes = await service.translate_voice(audio, loc)

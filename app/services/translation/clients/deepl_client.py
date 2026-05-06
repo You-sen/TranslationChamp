@@ -6,15 +6,26 @@ from app.schemas.translate_schema import LocalizationParams
 logger = logging.getLogger(__name__)
 
 
+# LOCALIZATION_SYSTEM_PROMPT = (
+#     "You are a professional localization expert. "
+#     "Translate the following text into {language} as spoken in {locale}. "
+#     "Use conversational, natural phrasing that reflects how a real local speaker would say it. "
+#     "Preserve the emotional tone of the original message. "
+#     "Avoid literal, word-for-word translation. "
+#     "Do not add explanations — return only the translated text."
+# )
 LOCALIZATION_SYSTEM_PROMPT = (
-    "You are a professional localization expert. "
-    "Translate the following text into {language} as spoken in {locale}. "
-    "Use conversational, natural phrasing that reflects how a real local speaker would say it. "
-    "Preserve the emotional tone of the original message. "
-    "Avoid literal, word-for-word translation. "
-    "Do not add explanations — return only the translated text."
+    "You are a native-level localization expert and cultural linguist. "
+    "Translate the following message into {language} as naturally spoken in {locale}. "
+    "Sound exactly like someone from {locale} said this in a real casual conversation. "
+    "Preserve the exact emotional weight of the original — not more, not less. "
+    "Use the vocabulary, rhythm, fillers, and expressions that locals in {locale} actually use. "
+    "Never add words, emotions, or meaning that were not in the original. "
+    "Never remove words, emotions, or meaning that were in the original. "
+    "Avoid textbook phrasing, robotic wording, and literal word-for-word translation. "
+    "Do not add explanations, alternatives, or notes. "
+    "Return only the final translated text."
 )
-
 
 class DeepLClient:
     """Translates text using DeepL API with localization context."""
@@ -183,14 +194,29 @@ class OpenAITranslator:
         self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
 
     async def translate(self, text: str, localization: LocalizationParams) -> dict:
-        system_prompt = (
-            "You are a professional localization expert. "
-            "Translate the following text into the requested language and locale. "
-            "Use conversational, natural phrasing that reflects how a real local speaker would say it. "
-            "Preserve the emotional tone of the original message. "
-            "Avoid literal, word-for-word translation. "
-            "Return only the translated text."
-        )
+        # system_prompt = (
+        #     "You are a professional localization expert. "
+        #     "Translate the following text into the requested language and locale. "
+        #     "Use conversational, natural phrasing that reflects how a real local speaker would say it. "
+        #     "Preserve the emotional tone of the original message. "
+        #     "Avoid literal, word-for-word translation. "
+        #     "Return only the translated text."
+        # )
+        system_prompt = """
+        You are a native-level localization expert and cultural linguist.
+        Your job is to translate spoken conversational messages — the kind people send 
+        each other in voice notes, chats, and casual calls.
+
+        Rules you must always follow:
+        - Translate meaning and emotion, not words
+        - Match the energy of the original exactly — if it's chill, keep it chill. If it's frustrated, keep that frustration. If it's warm, keep it warm.
+        - Never add words, emotions, or meaning that weren't in the original
+        - Never remove words, emotions, or meaning that were in the original
+        - Use contractions, slang, and fillers the way real people in that region actually speak
+        - Avoid textbook phrasing — no one talks like a dictionary
+        - If the original has hesitation or informality, reflect that
+        - Return only the final translated text. No explanations, no alternatives, no notes.
+        """
         user_prompt = (
             f"Translate into {localization.target_language} as spoken in {localization.target_locale}. "
             f"Style: {localization.style}.\n\n"
