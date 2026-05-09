@@ -81,6 +81,13 @@ LOCALE_INSTRUCTIONS: dict[tuple[str, str], str] = {
         "Preserve the original tone and intent."
     ),
 
+    ("spanish", "cuba"): (
+        "Target locale: Spanish as naturally spoken in Cuba. "
+        "Polish the translation so it sounds natural for Cuban Spanish while preserving the speaker's original meaning, tone, emotional intent, and level of formality. "
+        "Use conversational phrasing common in Cuba while avoiding overly literal, robotic, Spain-specific, or excessively formal wording. "
+        "Do not exaggerate slang or casualness beyond the original message."
+    ),
+
     ("portuguese", "brazil"): (
         "Target locale: Brazilian Portuguese. "
         "Polish the translation so it sounds natural for Brazilian Portuguese. "
@@ -179,6 +186,14 @@ LOCALE_INSTRUCTIONS: dict[tuple[str, str], str] = {
         "Avoid overly literal or robotic phrasing. "
         "Use neutral phrasing when gender or relationship context is unclear."
     ),
+
+    ("haitian creole", "haiti"): (
+        "Target locale: Haitian Creole as naturally spoken in Haiti. "
+        "Polish the translation so it sounds natural and conversational in Haitian Creole "
+        "while preserving the speaker's original meaning, tone, emotional intent, and level of formality. "
+        "Avoid robotic, overly literal, or overly formal phrasing unless the original message is formal. "
+        "Use phrasing that feels human and natural for everyday communication in Haiti."
+    ),
 }
 
 
@@ -187,6 +202,7 @@ LOCALE_INSTRUCTIONS: dict[tuple[str, str], str] = {
 
 DEEPL_UNSUPPORTED: set[str] = {
     "thai",
+    "haitian creole",
 }
 
 

@@ -81,6 +81,7 @@ class DeepLClient:
             ("english", "uk"): "EN-GB",
             ("chinese", "china"): "ZH",
             ("chinese", "simplified"): "ZH",
+            ("spanish", "cuba"): "ES",
         }
         key = (lang_norm, loc_norm)
         if key in locale_map:
@@ -135,6 +136,13 @@ class DeepLClient:
             "slovenian": "SL",
             "estonian": "ET",
         }
+
+        deepl_unsupported = {"thai", "haitian creole"}
+        if lang_norm in deepl_unsupported:
+            raise ValueError(
+                f"Language '{language}' is not supported by DeepL. "
+                "It should have been routed to GPT-only via DEEPL_UNSUPPORTED."
+            )
 
         if lang_norm in generic_map:
             return generic_map[lang_norm]
