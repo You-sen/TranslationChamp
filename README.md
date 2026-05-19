@@ -6,13 +6,15 @@ Localized translation for text, voice messages, video subtitles, and imported me
 
 ## Required environment variables
 
-Copy `.env.example` to `.env` and fill in all three keys before running.
+Copy `.env.example` to `.env` and fill in the required keys before running.
 
-| Variable | Where to get it |
+| Variable | Required | Where to get it |
 |---|---|
-| `OPENAI_API_KEY` | https://platform.openai.com/api-keys |
-| `DEEPL_API_KEY` | https://www.deepl.com/pro-api |
-| `ELEVENLABS_API_KEY` | https://elevenlabs.io/app/settings/api-keys |
+| `OPENAI_API_KEY` | Yes | https://platform.openai.com/api-keys |
+| `DEEPL_API_KEY` | Yes, if `TRANSLATOR_BACKEND=deepl` or `hybrid` | https://www.deepl.com/pro-api |
+| `ELEVENLABS_API_KEY` | Yes for voice translation | https://elevenlabs.io/app/settings/api-keys |
+| `USAGE_REPORTING_ENABLED` | No | Set to `true` to send cost data to the reporting backend |
+| `USAGE_REPORTING_URL` | No | Your backend endpoint, for example `http://127.0.0.1:3000/api/usage` |
 
 Translation backend modes:
 
@@ -21,13 +23,17 @@ Translation backend modes:
 - `TRANSLATOR_BACKEND=hybrid` -> DeepL translation + GPT localization polish
 - `TRANSLATOR_BACKEND=auto` -> uses `OPENAI_TRANSLATION_ENABLED` and `DEEPL_TRANSLATION_ENABLED`
 
+When usage reporting is enabled, the API sends the calculated per-request cost to the backend endpoint using the `user_token` provided by the frontend as the bearer token.
+
 ```env
 OPENAI_API_KEY=sk-...
 DEEPL_API_KEY=...
 ELEVENLABS_API_KEY=...
 TRANSLATOR_BACKEND=hybrid
 OPENAI_TRANSLATION_ENABLED=true
-DEEPL_TRANSLATION_ENABLED=true
+DEEPL_TRANSLATION_ENABLED=false
+USAGE_REPORTING_ENABLED=false
+USAGE_REPORTING_URL=
 ```
 
 > **ElevenLabs plan note:** voice cloning via `/voices/add` requires a paid plan
@@ -69,6 +75,7 @@ uvicorn main:app --reload
 curl -X POST http://localhost:8000/api/v1/translate/text \
   -H "Content-Type: application/json" \
   -d '{
+    "user_token": "<frontend user token>",
     "text": "Hey, what are you up to tonight?",
     "localization": {
       "target_language": "Spanish",
@@ -82,6 +89,7 @@ curl -X POST http://localhost:8000/api/v1/translate/text \
 ```bash
 curl -X POST http://localhost:8000/api/v1/translate/voice \
   -F "audio=@/path/to/voice.mp3" \
+  -F "user_token=<frontend user token>" \
   -F 'localization={"target_language":"Spanish","target_locale":"Colombia","style":"conversational"}'
 ```
 
@@ -95,6 +103,7 @@ curl "http://localhost:8000/api/v1/translate/voice/play/<token>" --output transl
 ```bash
 curl -X POST http://localhost:8000/api/v1/translate/video \
   -F "video=@/path/to/clip.mp4" \
+  -F "user_token=<frontend user token>" \
   -F 'localization={"target_language":"French","target_locale":"France","style":"conversational"}'
 ```
 
@@ -102,8 +111,11 @@ curl -X POST http://localhost:8000/api/v1/translate/video \
 ```bash
 curl -X POST http://localhost:8000/api/v1/translate/import \
   -F "media=@/path/to/audio.mp3" \
+  -F "user_token=<frontend user token>" \
   -F 'localization={"target_language":"German","target_locale":"Germany","style":"conversational"}'
 ```
+
+The `user_token` field is required on every translation request because the service uses it to associate the computed usage cost with the requesting user.
 
 ### Health check
 ```bash
