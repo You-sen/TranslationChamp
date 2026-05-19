@@ -40,6 +40,13 @@ class Settings(BaseSettings):
     # Speech rate for synthesized audio (1.0 = original speed)
     DEFAULT_SPEECH_RATE: float = 1.0
 
+    # ── Usage Reporting ───────────────────────────────────────────────────────
+    # Set USAGE_REPORTING_URL to your Express backend endpoint.
+    # Example: http://187.127.252.180:3000/api/usage
+    # Leave empty to disable reporting without changing code.
+    USAGE_REPORTING_ENABLED: bool = False
+    USAGE_REPORTING_URL: str = "http://187.127.252.180:3000/api/usage"  # replace when ready
+
     class Config:
         env_file = ".env"
         extra = "ignore"
