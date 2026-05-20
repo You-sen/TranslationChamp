@@ -40,9 +40,9 @@ class HybridTranslator:
             deepl_result = await self.deepl.translate(text, localization)
             raw_translation = deepl_result["translated_text"]
             detected_language = deepl_result.get("detected_source_language")
+            deepl_characters = deepl_result.get("characters_used", 0)
             logger.debug("DeepL raw translation: %s", raw_translation)
         except Exception as e:
-            # DeepL failed — fall back to GPT full translation silently
             logger.warning(
                 "DeepL failed for language '%s', falling back to GPT: %s",
                 localization.target_language,
@@ -56,9 +56,12 @@ class HybridTranslator:
             return {
                 "translated_text": gpt_result["translated_text"],
                 "detected_source_language": detected_language,
+                # Accumulate usage from both steps
+                "gpt_input_tokens": gpt_result.get("gpt_input_tokens", 0),
+                "gpt_output_tokens": gpt_result.get("gpt_output_tokens", 0),
+                "characters_used": deepl_characters,
             }
         except Exception as e:
-            # GPT localization failed — return DeepL output as-is
             logger.warning(
                 "GPT localization failed for '%s/%s', returning DeepL output: %s",
                 localization.target_language,
@@ -68,6 +71,9 @@ class HybridTranslator:
             return {
                 "translated_text": raw_translation,
                 "detected_source_language": detected_language,
+                "gpt_input_tokens": 0,
+                "gpt_output_tokens": 0,
+                "characters_used": deepl_characters,
             }
 
 
