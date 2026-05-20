@@ -8,6 +8,7 @@ from app.services.translation.clients.whisper_client import WhisperClient
 from app.services.translation.clients.translator_factory import get_translator_client
 from app.services.translation.utils.file_utils import save_upload, cleanup, temp_path
 from app.services.translation.utils.ffmpeg_utils import extract_audio, get_duration
+from app.services.translation.utils.cost_tracker import build_cost_breakdown
 
 whisper = WhisperClient()
 translator = get_translator_client()
@@ -46,6 +47,7 @@ async def handle_video_translation(
         transcript = await whisper.transcribe(audio_path)
         text = transcript.get("text", "")
         segments = transcript.get("segments", [])
+        whisper_seconds = transcript.get("duration_seconds", duration)
         if not segments:
             raise HTTPException(status_code=422, detail="No speech detected in video.")
 
@@ -54,11 +56,18 @@ async def handle_video_translation(
 
         # Translate each segment individually so we can return per-segment timing
         translated_segments: List[dict] = []
+        total_gpt_input = overall_result.get("gpt_input_tokens", 0)
+        total_gpt_output = overall_result.get("gpt_output_tokens", 0)
+        total_deepl_chars = overall_result.get("characters_used", 0)
+
         for seg in segments:
             seg_text = seg.get("text", "").strip()
             if not seg_text:
                 continue
             result = await translator.translate(seg_text, localization)
+            total_gpt_input += result.get("gpt_input_tokens", 0)
+            total_gpt_output += result.get("gpt_output_tokens", 0)
+            total_deepl_chars += result.get("characters_used", 0)
             translated_segments.append(
                 {
                     "start": seg.get("start", 0.0),
@@ -67,10 +76,19 @@ async def handle_video_translation(
                 }
             )
 
+        cost = build_cost_breakdown(
+            whisper_seconds=whisper_seconds,
+            gpt_input_tokens=total_gpt_input,
+            gpt_output_tokens=total_gpt_output,
+            deepl_characters=total_deepl_chars,
+        )
+
         return VideoTranslateResponse(
             translated_text=overall_result["translated_text"],
             source_language_detected=overall_result.get("detected_source_language") or transcript.get("language"),
             segments=translated_segments,
+            duration_seconds=round(duration, 2),
+            cost_breakdown=cost,
         )
 
     finally:
