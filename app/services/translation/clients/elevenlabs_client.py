@@ -55,11 +55,11 @@ class ElevenLabsClient:
 
     # ── Synthesis ─────────────────────────────────────────────────────────────
 
-    async def synthesize(self, text: str, voice_id: str) -> bytes:
+    async def synthesize(self, text: str, voice_id: str) -> tuple[bytes, int]:
         """
         Synthesize speech from translated text using the given voice_id.
         Uses eleven_multilingual_v2 to support all target languages.
-        Returns raw MP3 bytes.
+        Returns (raw MP3 bytes, characters_used).
         """
         url = f"{self.BASE_URL}/text-to-speech/{voice_id}"
         headers = {
@@ -88,7 +88,7 @@ class ElevenLabsClient:
                     detail=f"ElevenLabs speech synthesis failed ({response.status_code}): {response.text}",
                 ) from exc
 
-        return response.content
+        return response.content, len(text)
 
 
 def _mime_type_for_path(audio_path: Path) -> str:
