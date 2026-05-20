@@ -8,6 +8,7 @@ from app.services.translation.clients.whisper_client import WhisperClient
 from app.services.translation.clients.translator_factory import get_translator_client
 from app.services.translation.utils.file_utils import save_upload, cleanup, temp_path
 from app.services.translation.utils.ffmpeg_utils import extract_audio, get_duration
+from app.services.translation.utils.cost_tracker import build_cost_breakdown
 
 whisper = WhisperClient()
 translator = get_translator_client()
@@ -51,15 +52,25 @@ async def handle_import_media(
         # Transcribe
         transcript = await whisper.transcribe(transcribe_target)
         text = transcript["text"]
+        whisper_seconds = transcript.get("duration_seconds", duration)
         if not text:
             raise HTTPException(status_code=422, detail="No speech detected in media.")
 
         # Translate
         result = await translator.translate(text, localization)
 
+        cost = build_cost_breakdown(
+            whisper_seconds=whisper_seconds,
+            gpt_input_tokens=result.get("gpt_input_tokens", 0),
+            gpt_output_tokens=result.get("gpt_output_tokens", 0),
+            deepl_characters=result.get("characters_used", 0),
+        )
+
         return ImportMediaResponse(
             translated_text=result["translated_text"],
             source_language_detected=result.get("detected_source_language"),
+            duration_seconds=round(duration, 2),
+            cost_breakdown=cost,
         )
 
     finally:
