@@ -34,10 +34,14 @@ class WhisperClient:
                 response.raise_for_status()
                 result = response.json()
 
+        # duration is in the verbose_json response — used for Whisper cost calculation
+        duration_seconds = result.get("duration", 0.0)
+
         return {
             "text": result.get("text", "").strip(),
             "language": result.get("language"),
             "segments": result.get("segments", []),
+            "duration_seconds": float(duration_seconds),
         }
 # import httpx
 # from pathlib import Path
