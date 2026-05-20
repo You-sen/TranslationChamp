@@ -9,6 +9,7 @@ class LocalizationParams(BaseModel):
 
 
 class TextTranslateRequest(BaseModel):
+    user_token: str = Field(..., example="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
     text: str = Field(..., min_length=1, max_length=5000)
     localization: LocalizationParams
 
