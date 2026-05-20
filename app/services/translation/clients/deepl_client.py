@@ -47,6 +47,7 @@ class DeepLClient:
         return {
             "translated_text": translation["text"],
             "detected_source_language": translation.get("detected_source_language"),
+            "characters_used": len(text),
         }
 
     def _resolve_language_code(self, language: str, locale: str) -> str:
@@ -191,9 +192,13 @@ class OpenAITranslator:
         )
 
         translated_text = (response.choices[0].message.content or "").strip()
+        usage = response.usage
         return {
             "translated_text": translated_text,
             "detected_source_language": None,
+            "gpt_input_tokens": usage.prompt_tokens if usage else 0,
+            "gpt_output_tokens": usage.completion_tokens if usage else 0,
+            "characters_used": 0,
         }
 
     async def localize_only(
@@ -226,9 +231,13 @@ class OpenAITranslator:
         )
 
         localized_text = (response.choices[0].message.content or "").strip()
+        usage = response.usage
         return {
             "translated_text": localized_text,
             "detected_source_language": None,
+            "gpt_input_tokens": usage.prompt_tokens if usage else 0,
+            "gpt_output_tokens": usage.completion_tokens if usage else 0,
+            "characters_used": 0,
         }
 # working prev version starts here.
 # import httpx
@@ -471,4 +480,4 @@ class OpenAITranslator:
 #             "translated_text": translated_text,
 #             "detected_source_language": None,
 #         }
-# working prev version ends here. 
+# working prev version ends here.
