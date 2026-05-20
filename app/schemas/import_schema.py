@@ -21,7 +21,12 @@ class ImportRequest(BaseModel):
 class ImportMediaResponse(BaseModel):
     """
     Returns translated text from imported audio/video.
-    No video/audio output — text only.
+    duration_seconds and cost_breakdown are internal — used by translate.py
+    for usage reporting only. They are not populated in the return statement
+    so the frontend never receives them.
     """
     translated_text: str
     source_language_detected: Optional[str] = None
+    # Internal fields — populated by handler, stripped before returning to frontend
+    duration_seconds: Optional[float] = None
+    cost_breakdown: Optional[dict] = None
