@@ -8,6 +8,7 @@ from app.services.translation.clients.elevenlabs_client import ElevenLabsClient
 from app.services.translation.clients.translator_factory import get_translator_client
 from app.services.translation.utils.file_utils import save_upload, cleanup, temp_path
 from app.services.translation.utils.ffmpeg_utils import get_duration, change_tempo
+from app.services.translation.utils.cost_tracker import build_cost_breakdown
 import aiofiles
 
 whisper = WhisperClient()
@@ -18,16 +19,16 @@ elevenlabs = ElevenLabsClient()
 async def handle_voice_translation(
     audio_file: UploadFile,
     localization: LocalizationParams,
-) -> bytes:
+) -> tuple[bytes, float, dict]:
     """
     1. Save upload
     2. Validate duration (max 45s)
     3. Transcribe with Whisper
-    4. Translate with DeepL (localized)
+    4. Translate
     5. Clone user's voice via ElevenLabs
     6. Synthesize translated text with cloned voice
     7. Delete cloned voice
-    8. Return MP3 bytes
+    8. Return (MP3 bytes, duration, cost_breakdown)
     """
     audio_path: Path | None = None
     cloned_voice_id: str | None = None
@@ -47,6 +48,7 @@ async def handle_voice_translation(
         # Step 1: Transcribe
         transcript = await whisper.transcribe(audio_path)
         text = transcript["text"]
+        whisper_seconds = transcript.get("duration_seconds", duration)
         if not text:
             raise HTTPException(status_code=422, detail="No speech detected in audio.")
 
@@ -54,14 +56,24 @@ async def handle_voice_translation(
         result = await translator.translate(text, localization)
         translated_text = result["translated_text"]
 
-        # Step 3: Clone user's voice and use it for synthesis.
+        # Step 3: Clone user's voice
         cloned_voice_id = await elevenlabs.clone_voice(
             audio_path,
             content_type=audio_file.content_type,
         )
 
         # Step 4: Synthesize with cloned voice
-        audio_bytes = await elevenlabs.synthesize(translated_text, cloned_voice_id)
+        audio_bytes, elevenlabs_chars = await elevenlabs.synthesize(translated_text, cloned_voice_id)
+
+        # Build cost breakdown
+        cost = build_cost_breakdown(
+            whisper_seconds=whisper_seconds,
+            gpt_input_tokens=result.get("gpt_input_tokens", 0),
+            gpt_output_tokens=result.get("gpt_output_tokens", 0),
+            deepl_characters=result.get("characters_used", 0),
+            elevenlabs_tts_characters=elevenlabs_chars,
+        )
+        cost["detected_source_language"] = result.get("detected_source_language") or transcript.get("language")
 
         # Optionally adjust playback speed if configured
         rate = settings.DEFAULT_SPEECH_RATE
@@ -69,29 +81,24 @@ async def handle_voice_translation(
             tmp_in = temp_path(".mp3")
             tmp_out = temp_path(".mp3")
             try:
-                # write bytes to temp file
                 async with aiofiles.open(tmp_in, "wb") as f:
                     await f.write(audio_bytes)
-
-                # change tempo
                 await change_tempo(tmp_in, tmp_out, rate)
-
-                # read adjusted audio
                 async with aiofiles.open(tmp_out, "rb") as f:
                     adjusted = await f.read()
                 audio_bytes = adjusted
+                return audio_bytes, round(duration, 2), cost
             finally:
                 cleanup(tmp_in, tmp_out)
 
-        return audio_bytes
+        return audio_bytes, round(duration, 2), cost
 
     finally:
-        # Always clean up cloned voice and temp file
         if cloned_voice_id:
             try:
                 await elevenlabs.delete_voice(cloned_voice_id)
             except Exception:
-                pass  # best-effort cleanup
+                pass
         if audio_path:
             cleanup(audio_path)
 
