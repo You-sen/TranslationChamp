@@ -151,10 +151,11 @@ async def report_usage(
             )
             if response.status_code not in (200, 201, 204):
                 logger.warning(
-                    "Usage report returned unexpected status %s for endpoint '%s'",
+                    "Usage report returned unexpected status %s for endpoint '%s' — response: %s",
                     response.status_code,
                     endpoint,
-                )
+                    response.text,   # ← shows exactly what the other backend said
+            )
     except Exception as e:
         logger.warning(
             "Failed to report usage for endpoint '%s': %s",
