@@ -63,7 +63,7 @@ async def translate_text(
 
 @router.post(
     "/voice",
-    summary="Translate voice message — user's voice preserved (max 45s)",
+    summary="Translate voice message — user's voice preserved (max 60s)",
     response_model=VoiceTranslateResponse,
 )
 async def translate_voice_with_request(
@@ -75,9 +75,10 @@ async def translate_voice_with_request(
         ...,
         description='JSON: {"target_language":"Spanish","target_locale":"Colombia","style":"conversational"}',
     ),
+    voice_id: str | None = Form(None, description="Existing ElevenLabs voice_id (optional). Send this on subsequent requests to skip cloning."),
 ):
     loc = _parse_localization(localization)
-    audio_bytes, duration, cost = await service.translate_voice(audio, loc)
+    audio_bytes, duration, cost, returned_voice_id = await service.translate_voice(audio, loc, voice_id or None)
 
     token = uuid.uuid4().hex[:10]
     await store_audio(token, audio_bytes, media_type="audio/mpeg")
@@ -99,7 +100,7 @@ async def translate_voice_with_request(
         content_type=audio.content_type,
     )
 
-    return VoiceTranslateResponse(audio_url=audio_url)
+    return VoiceTranslateResponse(audio_url=audio_url, voice_id=returned_voice_id)
 
 
 @router.get(
@@ -119,7 +120,7 @@ async def play_ephemeral_audio(token: str):
 @router.post(
     "/video",
     response_model=VideoTranslateResponse,
-    summary="Translate video — returns translated text for frontend overlay (max 90s)",
+    summary="Translate video — returns translated text for frontend overlay (max 60s)",
 )
 async def translate_video(
     background_tasks: BackgroundTasks,
