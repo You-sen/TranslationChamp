@@ -33,8 +33,8 @@ class Settings(BaseSettings):
     OPENAI_TRANSLATION_MAX_OUTPUT_TOKENS: int = 2048
 
     # Duration limits
-    MAX_VOICE_DURATION_SECONDS: int = 45
-    MAX_VIDEO_DURATION_SECONDS: int = 90
+    MAX_VOICE_DURATION_SECONDS: int = 60
+    MAX_VIDEO_DURATION_SECONDS: int = 60
     MAX_IMPORT_DURATION_SECONDS: int = 90
 
     # Speech rate for synthesized audio (1.0 = original speed)
