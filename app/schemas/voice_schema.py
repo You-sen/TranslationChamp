@@ -13,3 +13,4 @@ class VoiceTranslateResponse(BaseModel):
 
     audio_data_url: Optional[str] = None
     audio_url: Optional[str] = None
+    voice_id: Optional[str] = None  # returned on first request; frontend stores and sends back on subsequent requests
