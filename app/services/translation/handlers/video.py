@@ -20,7 +20,7 @@ async def handle_video_translation(
 ) -> VideoTranslateResponse:
     """
     1. Save video
-    2. Validate duration (max 90s)
+    2. Validate duration (max 60s)
     3. Extract audio
     4. Transcribe with Whisper
     5. Translate with DeepL (localized)
