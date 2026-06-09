@@ -66,7 +66,7 @@ curl -X POST http://localhost:8000/api/v1/translate/text \
 - `POST /translate/voice` — Submit voice for translation
 - `GET /translate/voice/play/{token}` — Play the synthesized audio
 
-**Summary:** Translate voice message with speaker's voice preserved. Max 45 seconds.
+**Summary:** Translate voice message with speaker's voice preserved. Max 60 seconds.
 
 ### Request (POST /translate/voice)
 
@@ -290,7 +290,7 @@ All endpoints may return HTTP error codes:
 
 ```json
 {
-  "detail": "Audio exceeds maximum of 45s (got 60.5s)."
+  "detail": "Audio exceeds maximum of 60s (got 70.5s)."
 }
 ```
 
@@ -330,8 +330,8 @@ Both allow you to try endpoints interactively with live requests.
 ## 9. Rate Limits & Quotas
 
 - Text translation: No hard limit (depends on DeepL/OpenAI quota)
-- Voice translation: 45 seconds max per request
-- Video translation: 90 seconds max per request
+- Voice translation: 60 seconds max per request
+- Video translation: 60 seconds max per request
 - Ephemeral audio URLs: Expire after 5 minutes
 - ElevenLabs voice cloning: Requires paid plan with Instant Voice Cloning quota
 
