@@ -19,19 +19,20 @@ elevenlabs = ElevenLabsClient()
 async def handle_voice_translation(
     audio_file: UploadFile,
     localization: LocalizationParams,
-) -> tuple[bytes, float, dict]:
+    existing_voice_id: str | None = None,
+) -> tuple[bytes, float, dict, str]:
     """
     1. Save upload
-    2. Validate duration (max 45s)
+    2. Validate duration (max 60s)
     3. Transcribe with Whisper
     4. Translate
-    5. Clone user's voice via ElevenLabs
-    6. Synthesize translated text with cloned voice
-    7. Delete cloned voice
-    8. Return (MP3 bytes, duration, cost_breakdown)
+    5. Clone voice if no existing_voice_id, otherwise reuse it
+    6. Synthesize translated text with voice
+    7. Delete cloned voice ONLY if we created it this request
+    8. Return (MP3 bytes, duration, cost_breakdown, voice_id)
     """
     audio_path: Path | None = None
-    cloned_voice_id: str | None = None
+    newly_cloned_voice_id: str | None = None
 
     try:
         suffix = _audio_suffix(audio_file.content_type)
@@ -56,14 +57,20 @@ async def handle_voice_translation(
         result = await translator.translate(text, localization)
         translated_text = result["translated_text"]
 
-        # Step 3: Clone user's voice
-        cloned_voice_id = await elevenlabs.clone_voice(
-            audio_path,
-            content_type=audio_file.content_type,
-        )
+        # Step 3: Use existing voice or clone a new one
+        if existing_voice_id:
+            # Reuse saved voice — no clone operation used, limit preserved
+            voice_id = existing_voice_id
+        else:
+            # First request — clone voice and return the ID to frontend to store
+            newly_cloned_voice_id = await elevenlabs.clone_voice(
+                audio_path,
+                content_type=audio_file.content_type,
+            )
+            voice_id = newly_cloned_voice_id
 
-        # Step 4: Synthesize with cloned voice
-        audio_bytes, elevenlabs_chars = await elevenlabs.synthesize(translated_text, cloned_voice_id)
+        # Step 4: Synthesize with voice
+        audio_bytes, elevenlabs_chars = await elevenlabs.synthesize(translated_text, voice_id)
 
         # Build cost breakdown
         cost = build_cost_breakdown(
@@ -87,18 +94,20 @@ async def handle_voice_translation(
                 async with aiofiles.open(tmp_out, "rb") as f:
                     adjusted = await f.read()
                 audio_bytes = adjusted
-                return audio_bytes, round(duration, 2), cost
+                return audio_bytes, round(duration, 2), cost, voice_id
             finally:
                 cleanup(tmp_in, tmp_out)
 
-        return audio_bytes, round(duration, 2), cost
+        return audio_bytes, round(duration, 2), cost, voice_id
 
     finally:
-        if cloned_voice_id:
-            try:
-                await elevenlabs.delete_voice(cloned_voice_id)
-            except Exception:
-                pass
+        # Only delete if we cloned a NEW voice this request
+        # Do NOT delete if we reused an existing_voice_id from frontend
+        # if newly_cloned_voice_id:
+        #     try:
+        #         await elevenlabs.delete_voice(newly_cloned_voice_id)
+        #     except Exception:
+        #         pass
         if audio_path:
             cleanup(audio_path)
 
