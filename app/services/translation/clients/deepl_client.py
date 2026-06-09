@@ -205,20 +205,32 @@ class OpenAITranslator:
         self,
         already_translated: str,
         localization: LocalizationParams,
+        original_text: str | None = None,
     ) -> dict:
         """
         Hybrid mode — polishes an already-translated (DeepL) text.
         GPT only localizes, does not re-translate.
+        Receives original_text alongside DeepL output so GPT can
+        reference the original intent, tone, and emotion directly.
         """
         system_prompt = get_localization_system_prompt(
             localization.target_language,
             localization.target_locale,
         )
-        user_prompt = (
-            f"Target: {localization.target_language} as spoken in {localization.target_locale}. "
-            f"Style: {localization.style}.\n\n"
-            f"Already translated text to polish:\n{already_translated}"
-        )
+
+        if original_text:
+            user_prompt = (
+                f"Target: {localization.target_language} as spoken in {localization.target_locale}. "
+                f"Style: {localization.style}.\n\n"
+                f"Original message (for reference — use this to preserve the original intent, tone, and emotion):\n{original_text}\n\n"
+                f"DeepL translation to polish:\n{already_translated}"
+            )
+        else:
+            user_prompt = (
+                f"Target: {localization.target_language} as spoken in {localization.target_locale}. "
+                f"Style: {localization.style}.\n\n"
+                f"Already translated text to polish:\n{already_translated}"
+            )
 
         response = await self.client.chat.completions.create(
             model=settings.OPENAI_TRANSLATION_MODEL,
@@ -239,6 +251,47 @@ class OpenAITranslator:
             "gpt_output_tokens": usage.completion_tokens if usage else 0,
             "characters_used": 0,
         }
+    
+    # old version without original text starts here
+    # async def localize_only(
+    #     self,
+    #     already_translated: str,
+    #     localization: LocalizationParams,
+    # ) -> dict:
+    #     """
+    #     Hybrid mode — polishes an already-translated (DeepL) text.
+    #     GPT only localizes, does not re-translate.
+    #     """
+    #     system_prompt = get_localization_system_prompt(
+    #         localization.target_language,
+    #         localization.target_locale,
+    #     )
+    #     user_prompt = (
+    #         f"Target: {localization.target_language} as spoken in {localization.target_locale}. "
+    #         f"Style: {localization.style}.\n\n"
+    #         f"Already translated text to polish:\n{already_translated}"
+    #     )
+
+    #     response = await self.client.chat.completions.create(
+    #         model=settings.OPENAI_TRANSLATION_MODEL,
+    #         messages=[
+    #             {"role": "system", "content": system_prompt},
+    #             {"role": "user", "content": user_prompt},
+    #         ],
+    #         temperature=0.2,
+    #         max_tokens=settings.OPENAI_TRANSLATION_MAX_OUTPUT_TOKENS,
+    #     )
+
+    #     localized_text = (response.choices[0].message.content or "").strip()
+    #     usage = response.usage
+    #     return {
+    #         "translated_text": localized_text,
+    #         "detected_source_language": None,
+    #         "gpt_input_tokens": usage.prompt_tokens if usage else 0,
+    #         "gpt_output_tokens": usage.completion_tokens if usage else 0,
+    #         "characters_used": 0,
+    #     }
+    # old version without original text ends here
 # working prev version starts here.
 # import httpx
 # import logging
