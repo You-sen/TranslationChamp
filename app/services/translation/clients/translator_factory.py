@@ -51,8 +51,14 @@ class HybridTranslator:
             return await self.openai.translate(text, localization)
 
         # Step 2 — GPT localization polish
+        # Pass original_text alongside DeepL output so GPT can reference
+        # the original intent, tone, and emotion for better localization.
         try:
-            gpt_result = await self.openai.localize_only(raw_translation, localization)
+            gpt_result = await self.openai.localize_only(
+                raw_translation,
+                localization, 
+                original_text=text
+            )
             return {
                 "translated_text": gpt_result["translated_text"],
                 "detected_source_language": detected_language,
