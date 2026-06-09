@@ -12,9 +12,9 @@ async def translate_text(text: str, localization: LocalizationParams) -> TextTra
     return await handle_text_translation(text, localization)
 
 
-async def translate_voice(audio_file: UploadFile, localization: LocalizationParams) -> bytes:
+async def translate_voice(audio_file: UploadFile, localization: LocalizationParams, existing_voice_id: str | None = None,) -> tuple:
     from app.services.translation.handlers.voice import handle_voice_translation
-    return await handle_voice_translation(audio_file, localization)
+    return await handle_voice_translation(audio_file, localization, existing_voice_id)
 
 
 async def translate_video(video_file: UploadFile, localization: LocalizationParams) -> bytes:
